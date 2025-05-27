@@ -3,8 +3,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use capstone::Capstone;
 use capstone::arch::BuildsCapstone;
 use gimli::{
-    BaseAddresses, DW_EH_PE_omit, DW_EH_PE_uleb128, DwEhPe, EhFrame, EndianReader, LittleEndian,
-    Pointer, Reader, UnwindContext, UnwindSection, Vendor,
+    BaseAddresses, CfaRule, DW_EH_PE_omit, DW_EH_PE_uleb128, DwEhPe, EhFrame, EndianReader,
+    LittleEndian, Pointer, Reader, UnwindContext, UnwindSection, Vendor,
 };
 use object::{Architecture, Object, ObjectSection, ObjectSymbol, Section, Symbol};
 
@@ -75,7 +75,13 @@ fn main() {
         let mut ctx = UnwindContext::new();
         let row = fde.unwind_info_for_address(&eh_frame, &bases, &mut ctx, insn.address()).unwrap();
         if row.registers().cloned().collect::<Vec<_>>() != last_regs {
-            print!("   ");
+            match row.cfa() {
+                CfaRule::RegisterAndOffset { register, offset } => print!(
+                    "    CFA={}+{offset:#x}",
+                    gimli::AArch64::register_name(*register).unwrap()
+                ),
+                CfaRule::Expression(unwind_expression) => print!("    cfa={:?}", unwind_expression),
+            }
             for &(reg, ref rule) in row.registers() {
                 print!(" {}={rule:?}", gimli::AArch64::register_name(reg).unwrap());
             }
