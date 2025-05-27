@@ -1,0 +1,9 @@
+[package]
+name = "rust_unwind_inspect"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+capstone = "0.13.0"
+gimli = { version = "0.31.1", default-features = false, features = ["read-all"] }
+object = "0.36.7"
